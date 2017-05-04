@@ -387,22 +387,27 @@ void XrdFfsMisc_xrd_secsss_register(uid_t user_uid, gid_t user_gid, int *id)
 
     XrdSecEntity XrdFfsMiscUent("");
 
-    tmp = ntoa24((unsigned int)user_uid);
-    strncpy(user_num, tmp, 9);
-    free(tmp);
-
     if (id != NULL) {
         pthread_mutex_lock(&url_mlock);
         *id = iXrdConnPerUsr +1;  // id = 1 to nXrdConnPerUsr+1 (8)
         iXrdConnPerUsr = (iXrdConnPerUsr +1) % nXrdConnPerUsr;
         pthread_mutex_unlock(&url_mlock);
-        user_num[strlen(user_num)] = *id + 48; // this require that *id stay as single digit.
     }
-    else
-        user_num[strlen(user_num)] = 48;  // id = NULL
 
     if (XrdFfsMiscSecsss)
     {
+
+        tmp = ntoa24((unsigned int)user_uid);
+        strncpy(user_num, tmp, 9);
+        free(tmp);
+
+        if (id != NULL) {
+            user_num[strlen(user_num)] = *id + 48; // this require that *id stay as single digit.
+        }
+        else {
+            user_num[strlen(user_num)] = 48;  // id = NULL
+        }
+
         pwbuf = (char*) malloc(pwbuflen);
         getpwuid_r(user_uid, &pw, pwbuf, pwbuflen, &pwp);
         grbuf = (char*) malloc(grbuflen);
