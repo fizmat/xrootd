@@ -888,6 +888,26 @@ static int xrootdfs_statfs(const char *path, struct statvfs *stbuf)
  */
 }
 
+static int xrootdfs_flush(const char* path, struct fuse_file_info* fi)
+/* This is called (maybe multiple times) before xrootdfs_release.
+ * Try to do as much as is possible and check for errors,
+ * as xrootdfs_release cannot report any errors.
+ *
+ * path:    file path
+ * fi:      file information, contains descriptor
+ *
+ * returns: 0 on success, -errno on error
+ */
+{
+    ssize_t byte_count;
+    int fd = (int) fi->fh;
+    byte_count = XrdFfsWcache_flush(fd);
+    if (byte_count<0) {
+        return byte_count;
+    }
+    return 0;
+}
+
 static int xrootdfs_release(const char *path, struct fuse_file_info *fi)
 {
     /* Just a stub.  This method is optional and can safely be left
@@ -1278,6 +1298,7 @@ int main(int argc, char *argv[])
     xrootdfs_oper.statfs	= xrootdfs_statfs;
     xrootdfs_oper.release	= xrootdfs_release;
     xrootdfs_oper.fsync		= xrootdfs_fsync;
+    xrootdfs_oper.flush		= xrootdfs_flush;
     xrootdfs_oper.setxattr	= xrootdfs_setxattr;
     xrootdfs_oper.getxattr	= xrootdfs_getxattr;
     xrootdfs_oper.listxattr	= xrootdfs_listxattr;
