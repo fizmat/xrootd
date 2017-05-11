@@ -778,20 +778,22 @@ static int xrootdfs_read(const char *path, char *buf, size_t size, off_t offset,
 
 static int xrootdfs_write(const char *path, const char *buf, size_t size,
                      off_t offset, struct fuse_file_info *fi)
+/* Write data to open file.
+ *
+ * path:    file path, is ignored
+ * buf:     data to write
+ * size:    bytes to write
+ * offset:  location in file
+ * fi:      file info, including descriptor
+ *
+ * returns: number of bytes written on success, -errno on error
+ */
 {
-    int fd;
-    int res;
-
-/* 
-   File already existed. FUSE uses xrootdfs_open() and xrootdfs_truncate() to open and
-   truncate a file before calling xrootdfs_write() 
-*/
+    int fd, res;
     fd = (int) fi->fh;
-//    res = XrdFfsPosix_pwrite(fd, buf, size, offset);
     res = XrdFfsWcache_pwrite(fd, (char *)buf, size, offset);
     if (res == -1)
         res = -errno;
-
     return res;
 }
 
