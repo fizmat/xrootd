@@ -277,20 +277,6 @@ static int xrootdfs_access(const char *path, int mask)
     return 0;
 }
 
-static int xrootdfs_readlink(const char *path, char *buf, size_t size)
-{
-/*
-    int res;
-
-    res = readlink(path, buf, size - 1);
-    if (res == -1)
-        return -errno;
-
-    buf[res] = '\0';
-*/
-    return 0;
-}
-
 static int xrootdfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                        off_t offset, struct fuse_file_info *fi)
 {
@@ -569,18 +555,6 @@ static int xrootdfs_rmdir(const char *path)
     }
      */
     return 0;
-}
-
-static int xrootdfs_symlink(const char *from, const char *to)
-{
-/*
-    int res;
-
-    res = symlink(from, to);
-    if (res == -1)
-        return -errno;
-*/
-    return -EIO;
 }
 
 static int xrootdfs_rename(const char *from, const char *to)
@@ -1277,12 +1251,10 @@ int main(int argc, char *argv[])
     xrootdfs_oper.init		= xrootdfs_init;
     xrootdfs_oper.getattr	= xrootdfs_getattr;
     xrootdfs_oper.access	= xrootdfs_access;
-    xrootdfs_oper.readlink	= xrootdfs_readlink;
     xrootdfs_oper.readdir	= xrootdfs_readdir;
     xrootdfs_oper.mknod		= xrootdfs_mknod;
     xrootdfs_oper.mkdir		= xrootdfs_mkdir;
     xrootdfs_oper.create	= xrootdfs_create;
-    xrootdfs_oper.symlink	= xrootdfs_symlink;
     xrootdfs_oper.unlink	= xrootdfs_unlink;
     xrootdfs_oper.rmdir		= xrootdfs_rmdir;
     xrootdfs_oper.rename	= xrootdfs_rename;
