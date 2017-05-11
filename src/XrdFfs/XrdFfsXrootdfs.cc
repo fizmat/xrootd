@@ -1002,6 +1002,7 @@ static int xrootdfs_setxattr(const char *path, const char *name, const char *val
     }
     else if (!strcmp(name,"xrootdfs.fs.nworkers"))
     {
+#ifndef NOUSE_QUEUE
         int i, j;
         char *tmp_value;
         tmp_value=strdup(value);
@@ -1015,8 +1016,9 @@ static int xrootdfs_setxattr(const char *path, const char *name, const char *val
         if (j < i)
             XrdFfsQueue_remove_workers( i-j ); // XrdFfsQueue_remove_workers() will wait until workers are removed.
         j = XrdFfsQueue_count_workers();
-#ifndef NOUSE_QUEUE
         syslog(LOG_INFO, "INFO: Adjust the number of workers from %d to %d", i, j);
+#else
+        syslog(LOG_INFO, "INFO: Adjust the number of workers: not compiled to use task queue");
 #endif
     }
     return 0;
