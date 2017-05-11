@@ -716,24 +716,6 @@ static int xrootdfs_truncate(const char *path, off_t size)
     return 0;
 }
 
-static int xrootdfs_utimens(const char *path, const struct timespec ts[2])
-{
-/*
-    int res;
-    struct timeval tv[2];
-
-    tv[0].tv_sec = ts[0].tv_sec;
-    tv[0].tv_usec = ts[0].tv_nsec / 1000;
-    tv[1].tv_sec = ts[1].tv_sec;
-    tv[1].tv_usec = ts[1].tv_nsec / 1000;
-
-    res = utimes(path, tv);
-    if (res == -1)
-        return -errno;
-*/
-    return 0;
-}
-
 static int xrootdfs_open(const char *path, struct fuse_file_info *fi)
 /*
  * path:    path to file
@@ -1267,7 +1249,6 @@ int main(int argc, char *argv[])
     xrootdfs_oper.chown		= xrootdfs_chown;
     xrootdfs_oper.ftruncate	= xrootdfs_ftruncate;
     xrootdfs_oper.truncate	= xrootdfs_truncate;
-    xrootdfs_oper.utimens	= xrootdfs_utimens;
     xrootdfs_oper.open		= xrootdfs_open;
     xrootdfs_oper.read		= xrootdfs_read;
     xrootdfs_oper.write		= xrootdfs_write;
