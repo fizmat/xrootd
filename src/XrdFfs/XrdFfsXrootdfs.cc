@@ -1008,122 +1008,127 @@ static int xrootdfs_setxattr(const char *path, const char *name, const char *val
     return 0;
 }
 
-static int xrootdfs_getxattr(const char *path, const char *name, char *value,
-                    size_t size)
+static int xrootdfs_do_getxattr_url(const char *path, char *value, size_t size)
 {
-    int xattrlen;
     char rootpath[MAXROOTURLLEN]="";
     char rooturl[MAXROOTURLLEN]="";
-
-    if (!strcmp(name,"xroot.url"))
-    {
-        errno = 0;
-        strncat(rootpath,xrootdfs.rdr, MAXROOTURLLEN - strlen(rootpath) -1);
-        strncat(rootpath,path, MAXROOTURLLEN - strlen(rootpath) -1);
+    errno = 0;
+    strncat(rootpath,xrootdfs.rdr, MAXROOTURLLEN - strlen(rootpath) -1);
+    strncat(rootpath,path, MAXROOTURLLEN - strlen(rootpath) -1);
 
 //        XrdFfsMisc_get_current_url(rootpath, rooturl);
-        strcpy(rooturl, rootpath);
+    strcpy(rooturl, rootpath);
 
-        if (size == 0)
-            return strlen(rooturl);
-        else if (size > strlen(rooturl)) // check the size to make sure strcat(value, rooturl) is safe
-        {
-            size = strlen(rooturl);
-            if (size != 0) 
-            {
-                value[0] = '\0';
-                strcat(value, rooturl);
-            }
-            return size;
-        }
-        else
-        {
-            errno = ERANGE;
-            return -1;
-        }
-    }
-    else if (!strcmp(name, "xrootdfs.fs.dataserverlist"))
+    if (size == 0)
+        return strlen(rooturl);
+    else if (size > strlen(rooturl)) // check the size to make sure strcat(value, rooturl) is safe
     {
-        char *hostlist;
-
-        hostlist = (char*) malloc(sizeof(char) * XrdFfs_MAX_NUM_NODES * 256);
-        XrdFfsMisc_get_list_of_data_servers(hostlist);
-
-        if (size == 0)
+        size = strlen(rooturl);
+        if (size != 0)
         {
-            xattrlen = strlen(hostlist);
-            free(hostlist);
-            return xattrlen;
+            value[0] = '\0';
+            strcat(value, rooturl);
         }
-        else if (size > strlen(hostlist))
-        {
-            size = strlen(hostlist);
-            if (size != 0)
-            {
-                value[0] = '\0';
-                strcat(value, hostlist);
-            }
-            free(hostlist);
-            return size;
-        }
-        else
-        {
-            errno = ERANGE;
-            free(hostlist);
-            return -1;
-        }
+        return size;
     }
-    else if (!strcmp(name, "xrootdfs.fs.nworkers"))
+    else
     {
-        char nworkers[7];
-        int n;
-        n = XrdFfsQueue_count_workers();
-        sprintf(nworkers, "%d", n);
-
-        if (size == 0)
-            return strlen(nworkers);
-        else if (size > strlen(nworkers))
-        {
-            size = strlen(nworkers);
-            if (size != 0)
-            {
-                 value[0] = '\0';
-                 strcat(value, nworkers);
-            }
-            return size;
-        }
-        else
-        {
-            errno = ERANGE;
-            return -1;
-        }
+        errno = ERANGE;
+        return -1;
     }
-    else if (!strcmp(name, "xrootdfs.file.permission"))
+}
+
+static int xrootdfs_do_getxattr_dataserverlist(char *value, size_t size)
+{
+    char *hostlist;
+    int xattrlen;
+
+    hostlist = (char*) malloc(sizeof(char) * XrdFfs_MAX_NUM_NODES * 256);
+    XrdFfsMisc_get_list_of_data_servers(hostlist);
+
+    if (size == 0)
     {
-        char xattr[256]="";
-        strncat(rootpath,xrootdfs.rdr, MAXROOTURLLEN - strlen(rootpath) -1);
-        strncat(rootpath,path, MAXROOTURLLEN - strlen(rootpath) -1);
-
-        XrdFfsMisc_xrd_secsss_register(fuse_get_context()->uid, fuse_get_context()->gid, 0);
-        XrdFfsMisc_xrd_secsss_editurl(rootpath, fuse_get_context()->uid, 0);
-
-        xattrlen = XrdFfsPosix_getxattr(rootpath, "xroot.xattr.ofs.ap", xattr, 255);
-        if (size == 0) 
-            return xattrlen;
-        else if (size > (size_t)xattrlen)
-        {
-            strncpy(value, xattr, size);
-            size = xattrlen;
-            value[size] = '\0';
-            return size;
-        }
-        else
-        {
-            errno = ERANGE;
-            return -1;
-        }
+        xattrlen = strlen(hostlist);
+        free(hostlist);
+        return xattrlen;
     }
+    else if (size > strlen(hostlist))
+    {
+        size = strlen(hostlist);
+        if (size != 0)
+        {
+            value[0] = '\0';
+            strcat(value, hostlist);
+        }
+        free(hostlist);
+        return size;
+    }
+    else
+    {
+        errno = ERANGE;
+        free(hostlist);
+        return -1;
+    }
+}
 
+static int xrootdfs_do_getxattr_nworkers(char *value, size_t size)
+{
+    char nworkers[7];
+    int n;
+    n = XrdFfsQueue_count_workers();
+    sprintf(nworkers, "%d", n);
+
+    if (size == 0)
+        return strlen(nworkers);
+    else if (size > strlen(nworkers))
+    {
+        size = strlen(nworkers);
+        if (size != 0)
+        {
+             value[0] = '\0';
+             strcat(value, nworkers);
+        }
+        return size;
+    }
+    else
+    {
+        errno = ERANGE;
+        return -1;
+    }
+}
+
+static int xrootdfs_do_getxattr_permission(const char *path, char *value, size_t size)
+{
+    char rootpath[MAXROOTURLLEN]="";
+    int xattrlen;
+    char xattr[256]="";
+    strncat(rootpath,xrootdfs.rdr, MAXROOTURLLEN - strlen(rootpath) -1);
+    strncat(rootpath,path, MAXROOTURLLEN - strlen(rootpath) -1);
+
+    XrdFfsMisc_xrd_secsss_register(fuse_get_context()->uid, fuse_get_context()->gid, 0);
+    XrdFfsMisc_xrd_secsss_editurl(rootpath, fuse_get_context()->uid, 0);
+
+    xattrlen = XrdFfsPosix_getxattr(rootpath, "xroot.xattr.ofs.ap", xattr, 255);
+    if (size == 0)
+        return xattrlen;
+    else if (size > (size_t)xattrlen)
+    {
+        strncpy(value, xattr, size);
+        size = xattrlen;
+        value[size] = '\0';
+        return size;
+    }
+    else
+    {
+        errno = ERANGE;
+        return -1;
+    }
+}
+
+static int xrootdfs_do_getxattr_other(const char *path, const char *name, char *value, size_t size)
+{
+    char rootpath[MAXROOTURLLEN]="";
+    int xattrlen;
     if (xrootdfs.cns != NULL)
         strncat(rootpath,xrootdfs.cns, MAXROOTURLLEN - strlen(rootpath) -1);
     else
@@ -1137,6 +1142,31 @@ static int xrootdfs_getxattr(const char *path, const char *name, char *value,
         return -errno;
     else
         return xattrlen;
+}
+
+static int xrootdfs_getxattr(const char *path, const char *name, char *value,
+                    size_t size)
+{
+    if (!strcmp(name, "xroot.url"))
+    {
+        return xrootdfs_do_getxattr_url(path, value, size);
+    }
+    else if (!strcmp(name, "xrootdfs.fs.dataserverlist"))
+    {
+        return xrootdfs_do_getxattr_dataserverlist(value, size);
+    }
+    else if (!strcmp(name, "xrootdfs.fs.nworkers"))
+    {
+        return xrootdfs_do_getxattr_nworkers(value, size);
+    }
+    else if (!strcmp(name, "xrootdfs.file.permission"))
+    {
+        return xrootdfs_do_getxattr_permission(path, value, size);
+    }
+    else
+    {
+        return xrootdfs_do_getxattr_other(path, name, value, size);
+    }
 }
 
 static int xrootdfs_listxattr(const char *path, char *list, size_t size)
