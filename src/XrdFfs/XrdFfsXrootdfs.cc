@@ -1171,13 +1171,26 @@ static int xrootdfs_getxattr(const char *path, const char *name, char *value,
 
 static int xrootdfs_listxattr(const char *path, char *list, size_t size)
 {
-/*
-    int res = llistxattr(path, list, size);
-    if (res == -1)
-        return -errno;
-    return res;
-*/
-    return 0;
+    const char *xattr_list= "xroot.url\0"
+                            "xrootdfs.fs.dataserverlist\0"
+                            "xrootdfs.fs.nworkers\0"
+                            "xrootdfs.file.permission\0"
+                            "xroot.space\0"
+                            "xroot.xattr\0"
+                            "xroot.cksum";
+                                                    
+    const size_t listlen = 10+27+21+25+12+12+12;
+    if (size == 0)
+        return listlen;
+    else if (size >= listlen)
+    {
+        memcpy(list, xattr_list, listlen);
+        return listlen;
+    }
+    else
+    {
+        return -ERANGE;
+    }
 }
 
 static int xrootdfs_removexattr(const char *path, const char *name)
