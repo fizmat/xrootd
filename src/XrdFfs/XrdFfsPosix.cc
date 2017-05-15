@@ -191,7 +191,7 @@ long long XrdFfsPosix_getxattr(const char *path, const char *name, void *value, 
     }
     else  /* xroot.space or xroot.xattr or xroot.cksum is provided. */ 
     {
-        strcpy((char*)value, xattrbuf);
+        strncpy((char*)value, xattrbuf, size);
         return bufsize;
     }
 
